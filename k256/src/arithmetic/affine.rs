@@ -4,7 +4,7 @@
 
 use super::{FieldElement, ProjectivePoint, CURVE_EQUATION_B};
 use crate::{CompressedPoint, EncodedPoint, FieldBytes, PublicKey, Scalar, Secp256k1};
-use core::ops::{Mul, Neg};
+use core::ops::{Add, Mul, Neg, Sub};
 use elliptic_curve::{
     group::{prime::PrimeCurveAffine, GroupEncoding},
     sec1::{self, FromEncodedPoint, ToEncodedPoint},
@@ -86,6 +86,22 @@ impl AffinePoint {
     }
 }
 
+impl Sub for AffinePoint {
+    type Output = AffinePoint;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        (self.to_curve() - rhs.to_curve()).to_affine()
+    }
+}
+
+impl Add for AffinePoint {
+    type Output = AffinePoint;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        (self.to_curve() + rhs.to_curve()).to_affine()
+    }
+}
+
 impl PrimeCurveAffine for AffinePoint {
     type Scalar = Scalar;
     type Curve = ProjectivePoint;
@@ -163,6 +179,14 @@ impl Mul<&Scalar> for AffinePoint {
     type Output = ProjectivePoint;
 
     fn mul(self, scalar: &Scalar) -> ProjectivePoint {
+        ProjectivePoint::from(self) * scalar
+    }
+}
+
+impl Mul<Scalar> for &AffinePoint {
+    type Output = ProjectivePoint;
+
+    fn mul(self, scalar: Scalar) -> ProjectivePoint {
         ProjectivePoint::from(self) * scalar
     }
 }
@@ -278,6 +302,12 @@ impl ToEncodedPoint<Secp256k1> for AffinePoint {
             &EncodedPoint::identity(),
             self.is_identity(),
         )
+    }
+}
+
+impl AffinePoint {
+    pub fn compress(&self) -> EncodedPoint {
+        self.to_encoded_point(true)
     }
 }
 
